@@ -22,10 +22,10 @@ if uploaded_file:
                 prod_line = lines[i+2]
                 qty_line = lines[i+3]
 
-                if re.match(r'^M\d{3}$', loc_line) and jan_line.isdigit() and re.search(r'S\d{3}', prod_line) and re.match(r'^[\d,]+$', qty_line):
+                if re.match(r'^M\\d{3}$', loc_line) and jan_line.isdigit() and re.search(r'S\\d{3}', prod_line) and re.match(r'^[\\d,]+$', qty_line):
                     location = loc_line
                     jan = jan_line[-3:]
-                    product_match = re.search(r'(S\d{3}.*?)（?AS240', prod_line)
+                    product_match = re.search(r'(S\\d{3}.*?)（?AS240', prod_line)
                     product = product_match.group(1) if product_match else prod_line
                     quantity = int(qty_line.replace(',', ''))
                     cases = quantity // 240
@@ -46,7 +46,6 @@ if uploaded_file:
         st.success("✅ データ抽出完了！ 下記リストをコピーしてご利用ください。")
         st.dataframe(df, use_container_width=True)
 
-        # Excel出力（任意）
         to_excel = io.BytesIO()
         df.to_excel(to_excel, index=False, sheet_name="集約リスト")
         to_excel.seek(0)

@@ -20,7 +20,7 @@ if uploaded_file:
             for line in lines:
                 line = line.strip()
 
-                # ロケーション + JAN + 数量の行（例: M003 14 348 480）
+                # 1行目: ロケーション + JAN + 数量行（例: M013 2 105 2,160）
                 if re.match(r'^M\d{3}\s+\d+\s+\d{3}\s+[\d,]+$', line):
                     parts = line.split()
                     location = parts[0]
@@ -32,8 +32,8 @@ if uploaded_file:
                         "数量": quantity
                     }
 
-                # 商品行（Sで始まる品番で括弧がある）
-                elif buffer and re.search(r'S\d{3}.*?（AS240', line):
+                # 2行目: 商品コード + 商品名 + (AS240)
+                elif buffer and re.search(r'(S\d{3}.*?)（AS240', line):
                     product_match = re.search(r'(S\d{3}.*?)（AS240', line)
                     if product_match:
                         buffer["商品"] = product_match.group(1)

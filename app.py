@@ -16,20 +16,21 @@ if uploaded_file:
         for page in pdf.pages:
             lines = [line.strip() for line in page.extract_text().split('\n') if line.strip()]
             i = 0
-            while i + 3 < len(lines):
-                loc_line = lines[i]
-                jan_line = lines[i+1]
-                prod_line = lines[i+2]
-                qty_line = lines[i+3]
+            while i + 1 < len(lines):
+                upper = lines[i]
+                lower = lines[i+1]
 
-                # ✅ バックスラッシュ修正済み！
-                if re.match(r'^M\d{3}$', loc_line) and jan_line.isdigit() and re.search(r'S\d{3}', prod_line) and re.match(r'^[\d,]+$', qty_line):
-                    location = loc_line
-                    jan = jan_line[-3:]
-                    product_match = re.search(r'(S\d{3}.*?)（?AS240', prod_line)
-                    product = product_match.group(1) if product_match else prod_line
-                    quantity = int(qty_line.replace(',', ''))
+                # 上段にロケーション + JAN + 数量、下段に商品情報
+                match_upper = re.match(r'^(M\d{3})\s+\d+\s+(\d{3})\s+([\d,]+)$', upper)
+                match_lower = re.search(r'(S\d{3}.*?)（?AS240', lower)
+
+                if match_upper and match_lower:
+                    location = match_upper.group(1)
+                    jan = match_upper.group(2)
+                    quantity = int(match_upper.group(3).replace(',', ''))
+                    product = match_lower.group(1)
                     cases = quantity // 240
+
                     extracted.append({
                         "ロケーション": location,
                         "JAN下3桁": jan,
@@ -38,7 +39,7 @@ if uploaded_file:
                         "ケース数": cases,
                         "パレットNo": ""
                     })
-                    i += 4
+                    i += 2
                 else:
                     i += 1
 

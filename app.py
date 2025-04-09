@@ -1,8 +1,8 @@
 import streamlit as st
 import pdfplumber
 import pandas as pd
-import re
 import io
+import re
 
 st.set_page_config(page_title="PDF集約リスト変換", layout="wide")
 st.title("📄 PDF → 集約リスト変換ツール")
@@ -14,36 +14,35 @@ if uploaded_file:
 
     with pdfplumber.open(uploaded_file) as pdf:
         for page in pdf.pages:
-            lines = page.extract_text().split("\n")
-            buffer = None
+            lines = [line.strip() for line in page.extract_text().split('\n') if line.strip()]
+            i = 0
+            while i + 3 < len(lines):
+                loc_line = lines[i]
+                jan_line = lines[i+1]
+                prod_line = lines[i+2]
+                qty_line = lines[i+3]
 
-            for line in lines:
-                line = line.strip()
-
-                # 1行目: ロケーション + JAN + 数量行（例: M013 2 105 2,160）
-                if re.match(r'^M\d{3}\s+\d+\s+\d{3}\s+[\d,]+$', line):
-                    parts = line.split()
-                    location = parts[0]
-                    jan = parts[2]
-                    quantity = int(parts[3].replace(',', ''))
-                    buffer = {
+                if re.match(r'^M\d{3}$', loc_line) and jan_line.isdigit() and re.search(r'S\d{3}', prod_line) and re.match(r'^[\d,]+$', qty_line):
+                    location = loc_line
+                    jan = jan_line[-3:]
+                    product_match = re.search(r'(S\d{3}.*?)（?AS240', prod_line)
+                    product = product_match.group(1) if product_match else prod_line
+                    quantity = int(qty_line.replace(',', ''))
+                    cases = quantity // 240
+                    extracted.append({
                         "ロケーション": location,
                         "JAN下3桁": jan,
-                        "数量": quantity
-                    }
-
-                # 2行目: 商品コード + 商品名 + (AS240)
-                elif buffer and re.search(r'(S\d{3}.*?)（AS240', line):
-                    product_match = re.search(r'(S\d{3}.*?)（AS240', line)
-                    if product_match:
-                        buffer["商品"] = product_match.group(1)
-                        buffer["ケース数"] = buffer["数量"] // 240
-                        buffer["パレットNo"] = ""
-                        extracted.append(buffer)
-                        buffer = None
+                        "商品": product,
+                        "数量": quantity,
+                        "ケース数": cases,
+                        "パレットNo": ""
+                    })
+                    i += 4
+                else:
+                    i += 1
 
     if extracted:
-        df = pd.DataFrame(extracted, columns=["ロケーション", "JAN下3桁", "商品", "数量", "ケース数", "パレットNo"])
+        df = pd.DataFrame(extracted)
         st.success("✅ データ抽出完了！ 下記リストをコピーしてご利用ください。")
         st.dataframe(df, use_container_width=True)
 
